@@ -2,25 +2,45 @@ import React, { Component } from "react";
 import items from "./data";
 
 const EventContext = React.createContext();
-// <EventContext.Provider value={'hello'}
 
 class EventProvider extends Component {
   state = {
     events: [],
     sortedEvents: [],
     featuredEvents: [],
-    loading: true,
+    loading: false,
+    type: "all",
+    capacity: 1,
+    price: 0,
+    minPrice: 0,
+    maxPrice: 0,
+    minSize: 0,
+    maxSize: 0,
+    breakfast: false,
+    pets: false,
   };
-  // getData
 
   componentDidMount() {
     let events = this.formatData(items);
     let featuredEvents = events.filter((event) => event.featured === true);
+    let maxPrice = Math.max(
+      ...events.map((item) => {
+        return item.price;
+      })
+    );
+    let maxSize = Math.max(
+      ...events.map((item) => {
+        return item.size;
+      })
+    );
     this.setState({
       events,
       featuredEvents,
       sortedEvents: events,
       loading: false,
+      price:maxPrice,
+      maxPrice,
+      maxSize
     });
   }
 
@@ -35,9 +55,26 @@ class EventProvider extends Component {
     return tempItems;
   }
 
+  getEvent = (slug) => {
+    let tempEvents = [...this.state.events];
+    const event = tempEvents.find((event) => event.slug === slug);
+    return event;
+  };
+
+  handleChange = event => {
+    const type = event.target.type
+    const name = event.target.name
+    const value = event.target.value
+    console.log(type,name,value);
+  }
+
+  filterEvents = ()=>{
+    console.log('hello')
+  }
+
   render() {
     return (
-      <EventContext.Provider value={{ ...this.state }}>
+      <EventContext.Provider value={{ ...this.state, getEvent: this.getEvent, handleChange: this.handleChange }}>
         {this.props.children}
       </EventContext.Provider>
     );
@@ -45,5 +82,15 @@ class EventProvider extends Component {
 }
 
 const EventConsumer = EventContext.Consumer;
+
+export function withEventConsumer(Component) {
+  return function ConsumerWrapper(props) {
+    return (
+      <EventConsumer>
+        {(value) => <Component {...props} context={value} />}
+      </EventConsumer>
+    );
+  };
+}
 
 export { EventProvider, EventConsumer, EventContext };
