@@ -12,7 +12,6 @@ function EventsContainer({ context }) {
   }
   return (
     <>
-      Hello from EventContainer
       <EventsFilter events={events} />
       <EventsList events={sortedEvents} />
     </>

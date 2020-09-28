@@ -1,5 +1,10 @@
 import React, { Component } from "react";
-import items from "./data";
+//import items from "./data";
+import Client from "./Contentful";
+
+Client.getEntries({
+  content_type: "grandEvents",
+}).then((res) => console.log(res.items));
 
 const EventContext = React.createContext();
 
@@ -20,28 +25,40 @@ class EventProvider extends Component {
     pets: false,
   };
 
+  getData = async () => {
+    try {
+      let response = await Client.getEntries({
+        content_type: "grandEvents",
+        order: "fields.price"
+      });
+      let events = this.formatData(response.items);
+      let featuredEvents = events.filter((event) => event.featured === true);
+      let maxPrice = Math.max(
+        ...events.map((item) => {
+          return item.price;
+        })
+      );
+      let maxSize = Math.max(
+        ...events.map((item) => {
+          return item.size;
+        })
+      );
+      this.setState({
+        events,
+        featuredEvents,
+        sortedEvents: events,
+        loading: false,
+        price: maxPrice,
+        maxPrice,
+        maxSize,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   componentDidMount() {
-    let events = this.formatData(items);
-    let featuredEvents = events.filter((event) => event.featured === true);
-    let maxPrice = Math.max(
-      ...events.map((item) => {
-        return item.price;
-      })
-    );
-    let maxSize = Math.max(
-      ...events.map((item) => {
-        return item.size;
-      })
-    );
-    this.setState({
-      events,
-      featuredEvents,
-      sortedEvents: events,
-      loading: false,
-      price:maxPrice,
-      maxPrice,
-      maxSize
-    });
+    this.getData();
   }
 
   formatData(items) {
@@ -61,20 +78,76 @@ class EventProvider extends Component {
     return event;
   };
 
-  handleChange = event => {
-    const type = event.target.type
-    const name = event.target.name
-    const value = event.target.value
-    console.log(type,name,value);
-  }
+  handleChange = (event) => {
+    const target = event.target;
+    const value = target.type === "checkbox" ? target.checked : target.value;
+    const name = target.name;
+    this.setState(
+      {
+        [name]: value,
+      },
+      this.filterEvents
+    );
+  };
 
-  filterEvents = ()=>{
-    console.log('hello')
-  }
+  filterEvents = () => {
+    let {
+      events,
+      type,
+      capacity,
+      price,
+      minSize,
+      maxSize,
+      breakfast,
+      pets,
+    } = this.state;
+    //all the events
+    let tempEvents = [...events];
+
+    //tranform values
+    capacity = parseInt(capacity);
+    price = parseInt(price);
+
+    //filter by type
+    if (type !== "all") {
+      tempEvents = tempEvents.filter((event) => event.type === type);
+    }
+
+    //filter by capacity
+    if (capacity !== 1) {
+      tempEvents = tempEvents.filter((event) => event.capacity >= capacity);
+    }
+    //filter by price
+    tempEvents = tempEvents.filter((event) => event.price <= price);
+
+    //filter by size
+    tempEvents = tempEvents.filter(
+      (event) => event.size >= minSize && event.size <= maxSize
+    );
+
+    //filter by pets/breakfast
+    if (breakfast === "on") {
+      tempEvents = tempEvents.filter((event) => event.breakfast === true);
+    }
+    if (pets) {
+      tempEvents = tempEvents.filter((event) => event.pets === true);
+    }
+
+    //change state
+    this.setState({
+      sortedEvents: tempEvents,
+    });
+  };
 
   render() {
     return (
-      <EventContext.Provider value={{ ...this.state, getEvent: this.getEvent, handleChange: this.handleChange }}>
+      <EventContext.Provider
+        value={{
+          ...this.state,
+          getEvent: this.getEvent,
+          handleChange: this.handleChange,
+        }}
+      >
         {this.props.children}
       </EventContext.Provider>
     );
