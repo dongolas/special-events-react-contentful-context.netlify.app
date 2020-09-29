@@ -38,12 +38,11 @@ export default class SingleEvent extends Component {
       pets,
       images,
     } = event;
-
-    const [mainImg, ...defaultImages] = images;
+    const [main, ...defaultImages] = images;
 
     return (
       <>
-        <StyledHero img={images[0] || this.state.defaultBcg}>
+        <StyledHero img={main || this.state.defaultBcg}>
           <Banner title={`${name} event`}>
             <Link to="/events" className="btn-primary">
               Back to Events
